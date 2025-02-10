@@ -62,7 +62,14 @@ export function chooseReviewers(
   reviewers: string[]
   team_reviewers: string[]
 } {
-  const { useReviewGroups, reviewGroups, numberOfReviewers, reviewers } = config
+  const {
+    useReviewGroups,
+    useFreedomTeams,
+    reviewGroups,
+    numberOfReviewers,
+    reviewers,
+    freedomTeams,
+  } = config
   const useGroups: boolean =
     useReviewGroups && Object.keys(reviewGroups).length > 0
 
@@ -79,11 +86,28 @@ export function chooseReviewers(
     }
   }
 
-  const chosenReviewers = chooseUsers(reviewers, numberOfReviewers, owner)
+  let users: string[] = []
+  let teams: string[] = []
+
+  if (useFreedomTeams) {
+    users = chooseUsersFromFreedomTeams(owner, freedomTeams, numberOfReviewers)
+  }
+
+  const filteredReviewers = reviewers.filter(
+    (reviewer) => !users.includes(reviewer)
+  )
+
+  const chosenReviewers = chooseUsers(
+    filteredReviewers,
+    numberOfReviewers,
+    owner
+  )
+  users = users.concat(chosenReviewers.users)
+  teams = teams.concat(chosenReviewers.teams)
 
   return {
-    reviewers: chosenReviewers.users,
-    team_reviewers: chosenReviewers.teams,
+    reviewers: users,
+    team_reviewers: teams,
   }
 }
 
@@ -125,6 +149,34 @@ export function chooseAssignees(owner: string, config: Config): string[] {
   }
 
   return chosenAssignees
+}
+
+export function chooseUsersFromFreedomTeams(
+  owner: string,
+  freedomTeams: { [key: string]: string[] } | undefined,
+  desiredNumber: number
+): string[] {
+  let users: string[] = []
+  for (const team in freedomTeams) {
+    if (freedomTeams[team].includes(owner)) {
+      users = users.concat(
+        chooseUsers(freedomTeams[team], desiredNumber, owner).users
+      )
+    }
+  }
+
+  if (users.length === 0 && freedomTeams) {
+    const allMembers = Object.values(freedomTeams).reduce(
+      (acc: string[], members: string[]) => {
+        return acc.concat(members)
+      },
+      []
+    )
+
+    users = users.concat(chooseUsers(allMembers, desiredNumber, owner).users)
+  }
+
+  return users
 }
 
 export function includesSkipKeywords(

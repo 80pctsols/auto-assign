@@ -11,8 +11,10 @@ export interface Config {
   skipKeywords: string[]
   useReviewGroups: boolean
   useAssigneeGroups: boolean
+  useFreedomTeams: boolean
   reviewGroups: { [key: string]: string[] }
   assigneeGroups: { [key: string]: string[] }
+  freedomTeams: { [key: string]: string[] }
   skipUsers: string[]
 }
 
